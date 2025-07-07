@@ -7,7 +7,7 @@ const nextConfig = {
         headers: [
           {
             key: "Access-Control-Allow-Origin",
-            value: "*",
+            value: "http://192.168.0.107:85",
           },
           {
             key: "Access-Control-Allow-Methods",
@@ -21,9 +21,6 @@ const nextConfig = {
       },
     ];
   },
-  // experimental: {
-  //   allowedDevOrigins: ["http://192.168.0.107:3000"],
-  // },
 };
 
 export default nextConfig;
