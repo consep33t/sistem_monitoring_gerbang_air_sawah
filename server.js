@@ -10,7 +10,7 @@ app.prepare().then(() => {
     handle(req, res);
   });
 
-  server.listen(3000, () => {
+  server.listen(85, () => {
     console.log("✅ Server berjalan di http://localhost:85");
   });
 
