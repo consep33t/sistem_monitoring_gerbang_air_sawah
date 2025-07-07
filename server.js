@@ -10,8 +10,8 @@ app.prepare().then(() => {
     handle(req, res);
   });
 
-  server.listen(3050, () => {
-    console.log("✅ Server berjalan di http://localhost:3050");
+  server.listen(85, () => {
+    console.log("✅ Server berjalan di http://localhost:85");
   });
 
   setupSocket(server);
