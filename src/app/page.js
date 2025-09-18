@@ -70,6 +70,7 @@ export default function Home() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ [`gerbang${gerbangId}`]: newStatus }),
       });
+      window.location.reload(); // Muat ulang halaman untuk memperbarui status gerbang
     } catch (error) {
       console.error(`Gagal mengontrol gerbang ${gerbangId}:`, error);
     }
@@ -84,6 +85,7 @@ export default function Home() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ mode: newMode }),
       });
+      window.location.reload(); // Muat ulang halaman untuk memperbarui status mode
     } catch (error) {
       console.error("Gagal mengganti mode:", error);
     }
