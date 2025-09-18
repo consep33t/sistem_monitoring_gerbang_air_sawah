@@ -11,17 +11,45 @@ export default function Home() {
     kelembapan: 0,
     gerbang1: false,
     gerbang2: false,
+    mode: false, // Tambahkan status mode
   });
-  const [kontrol, setKontrol] = useState({ gerbang1: false, gerbang2: false });
+  const [kontrol, setKontrol] = useState({
+    gerbang1: false,
+    gerbang2: false,
+    mode: false, // Tambahkan status mode kontrol
+  });
+  const [loading, setLoading] = useState(true);
+
+  // Fungsi untuk mengambil data kontrol awal dari API
+  const fetchControlStatus = async () => {
+    try {
+      const res = await fetch("/api/control_status");
+      const result = await res.json();
+      if (result.success) {
+        setKontrol(result.control);
+      }
+    } catch (error) {
+      console.error("Gagal mengambil status kontrol:", error);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   useEffect(() => {
-    fetch("/api/control_status")
-      .then((res) => res.json())
-      .then(setKontrol);
+    fetchControlStatus();
 
-    socket.on("sensor_update", setData);
-    socket.on("control_update", ({ id, status }) => {
-      setKontrol((prev) => ({ ...prev, [`gerbang${id}`]: status }));
+    socket.on("sensor_update", (latestData) => {
+      setData(latestData);
+      // Sinkronkan status gerbang dari sensor ke status kontrol lokal
+      setKontrol((prev) => ({
+        ...prev,
+        gerbang1: latestData.gerbang1,
+        gerbang2: latestData.gerbang2,
+      }));
+    });
+
+    socket.on("control_update", (latestControl) => {
+      setKontrol(latestControl);
     });
 
     return () => {
@@ -30,14 +58,44 @@ export default function Home() {
     };
   }, []);
 
-  const toggleGerbang = (id) => {
-    const newStatus = !kontrol[`gerbang${id}`];
-    fetch("/api/control_status", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ id, status: newStatus }),
-    });
+  const toggleGerbang = async (gerbangId) => {
+    // Ambil status gerbang saat ini dari state 'kontrol'
+    const currentStatus = kontrol[`gerbang${gerbangId}`];
+    const newStatus = !currentStatus;
+
+    try {
+      // Kirim permintaan PATCH ke API dengan nama kolom yang benar
+      await fetch("/api/control_status", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ [`gerbang${gerbangId}`]: newStatus }),
+      });
+    } catch (error) {
+      console.error(`Gagal mengontrol gerbang ${gerbangId}:`, error);
+    }
   };
+
+  const toggleMode = async () => {
+    const newMode = !kontrol.mode;
+    try {
+      // Kirim permintaan PATCH untuk mengubah mode
+      await fetch("/api/control_status", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ mode: newMode }),
+      });
+    } catch (error) {
+      console.error("Gagal mengganti mode:", error);
+    }
+  };
+
+  if (loading) {
+    return (
+      <main className="min-h-screen flex items-center justify-center">
+        <p className="text-xl text-gray-700">Memuat...</p>
+      </main>
+    );
+  }
 
   return (
     <main className="min-h-screen bg-gray-100 flex flex-col items-center p-8">
@@ -48,6 +106,20 @@ export default function Home() {
         pantau status & kendalikan gerbang air -- kontrol lebih aman dan efesien
       </p>
 
+      {/* Tampilan Status Mode */}
+      <div className="w-full max-w-lg mb-4 text-center">
+        <p className="text-2xl font-bold text-gray-800">
+          Mode:{" "}
+          <span
+            className={`font-extrabold ${
+              kontrol.mode ? "text-orange-500" : "text-blue-500"
+            }`}
+          >
+            {kontrol.mode ? "MANUAL" : "OTOMATIS"}
+          </span>
+        </p>
+      </div>
+
       <h2 className="text-xl font-semibold text-gray-700 mb-4">
         Status Sensor
       </h2>
@@ -57,6 +129,7 @@ export default function Home() {
           src="/sea-level.png"
           height={200}
           width={200}
+          alt="Level Air"
         />
         <div className="text-black">
           <h2 className="font-bold">Ketinggian Air</h2>
@@ -72,12 +145,13 @@ export default function Home() {
           src="/humidity.png"
           height={200}
           width={200}
+          alt="Kelembapan Tanah"
         />
         <div className="text-black">
-          <h2 className="font-bold">Kelembapan Air</h2>
+          <h2 className="font-bold">Kelembapan Tanah</h2>
           <p>
             <span className="font-medium text-gray-800">Kelembapan:</span>{" "}
-            {data.kelembapan}%
+            {data.kelembapan}
           </p>
         </div>
       </div>
@@ -108,7 +182,7 @@ export default function Home() {
         </div>
       </div>
 
-      {/* Kontrol Gerbang */}
+      {/* Kontrol Gerbang dan Mode */}
       <div className="bg-white shadow-lg rounded-2xl p-6 w-full max-w-lg">
         <h3 className="text-xl text-center font-semibold text-black mb-2">
           Kontrol Gerbang
@@ -116,11 +190,30 @@ export default function Home() {
         <p className="text-black text-center text-xl mb-4">
           atur buka & tutup gerbang secara cepat
         </p>
+
+        {/* Tombol Toggle Mode */}
+        <div className="flex justify-center mb-6">
+          <button
+            onClick={toggleMode}
+            className={`px-6 py-3 rounded-full text-white font-medium transition-all ${
+              kontrol.mode
+                ? "bg-blue-600 hover:bg-blue-700"
+                : "bg-orange-500 hover:bg-orange-600"
+            }`}
+          >
+            {kontrol.mode ? "Ganti ke Otomatis" : "Ganti ke Manual"}
+          </button>
+        </div>
+
+        {/* Tombol Kontrol Gerbang (hanya aktif di mode manual) */}
         <div className="flex gap-4 justify-center">
           <button
             onClick={() => toggleGerbang(1)}
+            disabled={!kontrol.mode}
             className={`px-4 py-2 rounded-xl text-white font-medium transition-all ${
-              kontrol.gerbang1
+              !kontrol.mode
+                ? "bg-gray-400 cursor-not-allowed"
+                : kontrol.gerbang1
                 ? "bg-red-500 hover:bg-red-600"
                 : "bg-green-500 hover:bg-green-600"
             }`}
@@ -129,8 +222,11 @@ export default function Home() {
           </button>
           <button
             onClick={() => toggleGerbang(2)}
+            disabled={!kontrol.mode}
             className={`px-4 py-2 rounded-xl text-white font-medium transition-all ${
-              kontrol.gerbang2
+              !kontrol.mode
+                ? "bg-gray-400 cursor-not-allowed"
+                : kontrol.gerbang2
                 ? "bg-red-500 hover:bg-red-600"
                 : "bg-green-500 hover:bg-green-600"
             }`}
