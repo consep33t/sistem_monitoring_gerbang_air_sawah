@@ -7,7 +7,7 @@ export async function POST(req) {
 
   // Simpan ke DB, pastikan kolom DB sesuai (ganti ketinggian -> jarak, tambah mode jika ada)
   await db.query(
-    "INSERT INTO sensor_data (jarak, kelembapan, gerbang1_status, gerbang2_status, mode) VALUES (?, ?, ?, ?, ?)",
+    "INSERT INTO sensor_data (ketinggian, kelembapan, gerbang1_status, gerbang2_status, mode) VALUES (?, ?, ?, ?, ?)",
     [jarak, kelembapan, gerbang1, gerbang2, mode]
   );
 
