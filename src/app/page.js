@@ -23,7 +23,7 @@ export default function Home() {
   // Fungsi untuk mengambil data kontrol awal dari API
   const fetchControlStatus = async () => {
     try {
-      const res = await fetch("/api/control_status");
+      const res = await fetch("/api/user/control");
       const result = await res.json();
       if (result.success) {
         setKontrol(result.control);
@@ -65,7 +65,7 @@ export default function Home() {
 
     try {
       // Kirim permintaan PATCH ke API dengan nama kolom yang benar
-      await fetch("/api/control_status", {
+      await fetch("/api/user/control", {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ [`gerbang${gerbangId}`]: newStatus }),
@@ -79,7 +79,7 @@ export default function Home() {
     const newMode = !kontrol.mode;
     try {
       // Kirim permintaan PATCH untuk mengubah mode
-      await fetch("/api/control_status", {
+      await fetch("/api/user/control", {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ mode: newMode }),
